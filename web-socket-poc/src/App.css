@@ -1,42 +1,109 @@
-#root {
-  max-width: 1280px;
+.app-container {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 20px;
+  font-family: Arial, sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.connection-status {
+  margin: 20px 0;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.connection-status button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.connection-status button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
-.card {
-  padding: 2em;
+.event-form {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
-.read-the-docs {
-  color: #888;
+.event-form h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.event-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.event-form div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.event-form label {
+  font-weight: bold;
+}
+
+.event-form input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.event-form button {
+  padding: 10px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.event-form button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.events-list {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.events-list h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.events-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.events-list li {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.events-list li:last-child {
+  border-bottom: none;
+}
+
+.events-list small {
+  color: #666;
 }
