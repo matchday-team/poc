@@ -19,6 +19,12 @@ interface MatchEventResponse {
   eventLog: string;
 }
 
+interface ApiResponse<T> {
+  status: string;
+  message: string;
+  data?: T;
+}
+
 function App() {
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<MatchEventResponse[]>([]);
@@ -27,6 +33,7 @@ function App() {
   const [description, setDescription] = useState('');
   const [token, setToken] = useState('');
   const [userId, setUserId] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const stompClient = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -35,16 +42,24 @@ function App() {
       webSocketFactory: () => socket,
       onConnect: () => {
         setConnected(true);
+        setError(null);
         console.log('Connected to WebSocket');
 
         client.subscribe(`/topic/match/${matchId}`, (message: IMessage) => {
           const event = JSON.parse(message.body);
           setEvents(prev => [event, ...prev]);
         });
+
+        client.subscribe('/user/queue/errors', (message: IMessage) => {
+          const errorResponse: ApiResponse<any> = JSON.parse(message.body);
+          setError(errorResponse.message);
+          console.error('WebSocket Error:', errorResponse);
+        });
       },
       onStompError: (frame: IFrame) => {
         console.error('Error connecting to WebSocket:', frame);
         setConnected(false);
+        setError('WebSocket 연결 오류가 발생했습니다.');
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -91,6 +106,12 @@ function App() {
       <div className="connection-status">
         Status: {connected ? 'Connected' : 'Disconnected'}
       </div>
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
 
       <div className="event-form">
         <h2>Record Event</h2>
