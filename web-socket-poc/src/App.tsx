@@ -81,18 +81,18 @@ function App() {
     if (!stompClient.current || !connected) return;
 
     const event: MatchEventRequest = {
-      userId: Number(userId),
-      eventType,
-      description
+      userId: userId ? Number(userId) : 0,
+      eventType: eventType || 'UNKNOWN',
+      description: description || 'No description provided'
     };
 
     const message = {
-      token,
+      token: token || '',
       data: event
     };
 
     stompClient.current.publish({
-      destination: `/app/match/${matchId}`,
+      destination: `/app/match/${matchId || 'default'}`,
       body: JSON.stringify(message)
     });
     setEventType('');
@@ -122,8 +122,7 @@ function App() {
               type="text" 
               value={matchId} 
               onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID"
-              required
+              placeholder="Enter match ID (default: 'default')"
             />
           </div>
           <div>
@@ -132,8 +131,7 @@ function App() {
               type="text" 
               value={token} 
               onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token"
-              required
+              placeholder="Enter token (optional)"
             />
           </div>
           <div>
@@ -142,8 +140,7 @@ function App() {
               type="text" 
               value={userId} 
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter user ID"
-              required
+              placeholder="Enter user ID (default: 0)"
             />
           </div>
           <div>
@@ -152,8 +149,7 @@ function App() {
               type="text" 
               value={eventType} 
               onChange={(e) => setEventType(e.target.value)}
-              placeholder="e.g., GOAL, YELLOW_CARD"
-              required
+              placeholder="e.g., GOAL, YELLOW_CARD (default: UNKNOWN)"
             />
           </div>
           <div>
@@ -162,8 +158,7 @@ function App() {
               type="text" 
               value={description} 
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Event description"
-              required
+              placeholder="Event description (default: No description provided)"
             />
           </div>
           <button type="submit" disabled={!connected}>Send Event</button>
