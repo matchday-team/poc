@@ -28,13 +28,21 @@ interface ApiResponse<T> {
 function App() {
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<MatchEventResponse[]>([]);
-  const [matchId, setMatchId] = useState('');
-  const [eventType, setEventType] = useState('');
-  const [description, setDescription] = useState('');
-  const [token, setToken] = useState('');
-  const [userId, setUserId] = useState('');
+  const [matchId, setMatchId] = useState(localStorage.getItem('matchId') || '');
+  const [eventType, setEventType] = useState(localStorage.getItem('eventType') || '');
+  const [description, setDescription] = useState(localStorage.getItem('description') || '');
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
   const [error, setError] = useState<string | null>(null);
   const stompClient = useRef<Client | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('matchId', matchId);
+    localStorage.setItem('eventType', eventType);
+    localStorage.setItem('description', description);
+    localStorage.setItem('token', token);
+    localStorage.setItem('userId', userId);
+  }, [matchId, eventType, description, token, userId]);
 
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/ws');
@@ -82,8 +90,8 @@ function App() {
 
     const event: MatchEventRequest = {
       userId: userId ? Number(userId) : 0,
-      eventType: eventType || 'UNKNOWN',
-      description: description || 'No description provided'
+      eventType,
+      description
     };
 
     const message = {
@@ -95,8 +103,6 @@ function App() {
       destination: `/app/match/${matchId || 'default'}`,
       body: JSON.stringify(message)
     });
-    setEventType('');
-    setDescription('');
   };
 
   return (
@@ -122,7 +128,7 @@ function App() {
               type="text" 
               value={matchId} 
               onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID (default: 'default')"
+              placeholder="Enter match ID"
             />
           </div>
           <div>
@@ -131,7 +137,7 @@ function App() {
               type="text" 
               value={token} 
               onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token (optional)"
+              placeholder="Enter token"
             />
           </div>
           <div>
@@ -140,7 +146,7 @@ function App() {
               type="text" 
               value={userId} 
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter user ID (default: 0)"
+              placeholder="Enter user ID"
             />
           </div>
           <div>
@@ -149,7 +155,7 @@ function App() {
               type="text" 
               value={eventType} 
               onChange={(e) => setEventType(e.target.value)}
-              placeholder="e.g., GOAL, YELLOW_CARD (default: UNKNOWN)"
+              placeholder="Enter event type"
             />
           </div>
           <div>
@@ -158,7 +164,7 @@ function App() {
               type="text" 
               value={description} 
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Event description (default: No description provided)"
+              placeholder="Enter description"
             />
           </div>
           <button type="submit" disabled={!connected}>Send Event</button>
