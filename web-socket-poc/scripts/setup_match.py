@@ -69,7 +69,7 @@ def register_match_user(match_id, user_id, team_id, role):
         "teamId": team_id,
         "role": role,
         "matchPosition": "FW",
-        "matchGrid": "A1",
+        "matchGrid": "1",
     }
     response = requests.post(url, json=payload)
     print(f"Registered user {user_id} for match {match_id}: {response.json()}")
