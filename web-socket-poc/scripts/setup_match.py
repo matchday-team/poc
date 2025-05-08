@@ -55,6 +55,7 @@ def create_match(title, home_team_id, away_team_id):
         "matchDate": "2999-04-22",
         "startTime": "14:30:00",
         "endTime": "16:30:00",
+        "matchState": "SCHEDULED",
     }
     response = requests.post(url, json=payload)
     print(f"Created match {title}: {response.json()}")
