@@ -53,8 +53,8 @@ def create_match(title, home_team_id, away_team_id):
         "matchType": "리그",
         "stadium": "홈구장",
         "matchDate": "2999-04-22",
-        "startTime": "14:30:00",
-        "endTime": "16:30:00",
+        "plannedStartTime": "14:30:00",
+        "plannedEndTime": "14:30:00",
         "matchState": "SCHEDULED",
     }
     response = requests.post(url, json=payload)
@@ -72,7 +72,7 @@ def register_match_user(match_id, user_id, team_id, role):
         "matchGrid": "1",
     }
     response = requests.post(url, json=payload)
-    print(f"Registered user {user_id} for match {match_id}: {response.json()}")
+    print(f"Registered user {user_id} for match {match_id} as {role}: {response.json()}")
 
 
 def main():
