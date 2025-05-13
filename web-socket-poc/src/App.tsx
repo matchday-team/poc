@@ -14,6 +14,11 @@ interface MatchEventRequest {
   description: string;
 }
 
+interface TeamEventRequest {
+  eventType: string;
+  description?: string;
+}
+
 interface MatchUserExchangeRequest {
   fromMatchUserId: number;
   toUserId: number;
@@ -40,6 +45,7 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<MatchEventResponse[]>([]);
   const [matchId, setMatchId] = useState(localStorage.getItem("matchId") || "");
+  const [teamId, setTeamId] = useState(localStorage.getItem("teamId") || "");
   const [eventType, setEventType] = useState(
     localStorage.getItem("eventType") || ""
   );
@@ -62,6 +68,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem("matchId", matchId);
+    localStorage.setItem("teamId", teamId);
     localStorage.setItem("eventType", eventType);
     localStorage.setItem("description", description);
     localStorage.setItem("token", token);
@@ -71,6 +78,7 @@ function App() {
     localStorage.setItem("exchangeMessage", exchangeMessage);
   }, [
     matchId,
+    teamId,
     eventType,
     description,
     token,
@@ -89,6 +97,7 @@ function App() {
         setError(null);
         console.log("Connected to WebSocket");
 
+        // 개인 이벤트 구독
         client.subscribe(`/topic/match/${matchId}`, (message: IMessage) => {
           const event = JSON.parse(message.body);
           setEvents((prev) => [event, ...prev]);
@@ -118,7 +127,7 @@ function App() {
         stompClient.current.deactivate();
       }
     };
-  }, [matchId]);
+  }, [matchId, teamId]);
 
   const sendEvent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +146,26 @@ function App() {
 
     stompClient.current.publish({
       destination: `/app/match/${matchId || "default"}`,
+      body: JSON.stringify(message),
+    });
+  };
+
+  const sendTeamEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stompClient.current || !connected || !teamId) return;
+
+    const event: TeamEventRequest = {
+      eventType,
+      description: description || undefined,
+    };
+
+    const message: Message<TeamEventRequest> = {
+      token: token || "",
+      data: event,
+    };
+
+    stompClient.current.publish({
+      destination: `/app/match/${matchId}/teams/${teamId}`,
       body: JSON.stringify(message),
     });
   };
@@ -173,7 +202,7 @@ function App() {
       {error && <div className="error-message">{error}</div>}
 
       <div className="event-form">
-        <h2>Record Event</h2>
+        <h2>Record Player Event</h2>
         <form onSubmit={sendEvent}>
           <div>
             <label>Match ID:</label>
@@ -221,7 +250,61 @@ function App() {
             />
           </div>
           <button type="submit" disabled={!connected}>
-            Send Event
+            Send Player Event
+          </button>
+        </form>
+      </div>
+
+      <div className="event-form">
+        <h2>Record Team Event</h2>
+        <form onSubmit={sendTeamEvent}>
+          <div>
+            <label>Match ID:</label>
+            <input
+              type="text"
+              value={matchId}
+              onChange={(e) => setMatchId(e.target.value)}
+              placeholder="Enter match ID"
+            />
+          </div>
+          <div>
+            <label>Team ID:</label>
+            <input
+              type="text"
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+              placeholder="Enter team ID"
+            />
+          </div>
+          <div>
+            <label>Token:</label>
+            <input
+              type="text"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Enter token"
+            />
+          </div>
+          <div>
+            <label>Event Type:</label>
+            <input
+              type="text"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              placeholder="Enter event type"
+            />
+          </div>
+          <div>
+            <label>Description:</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+            />
+          </div>
+          <button type="submit" disabled={!connected || !teamId}>
+            Send Team Event
           </button>
         </form>
       </div>
