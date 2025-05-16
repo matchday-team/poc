@@ -3,15 +3,13 @@ import { Client, IMessage, IFrame } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import "./App.css";
 
-interface Message<T> {
-  token: string;
-  data: T;
-}
-
 interface MatchEventRequest {
-  userId: number;
   eventType: string;
   description: string;
+}
+
+interface MatchEventUserRequest extends MatchEventRequest {
+  matchUserId: number;
 }
 
 interface TeamEventRequest {
@@ -19,9 +17,15 @@ interface TeamEventRequest {
   description?: string;
 }
 
+interface MatchEventCancelRequest {
+  matchUserId?: number;
+  teamId: number;
+  matchEventType: string;
+}
+
 interface MatchUserExchangeRequest {
   fromMatchUserId: number;
-  toUserId: number;
+  toMatchUserId: number;
   message: string;
 }
 
@@ -30,8 +34,8 @@ interface MatchEventResponse {
   elapsedMinutes: number;
   teamId: number;
   teamName: string;
-  userId: number;
   userName: string;
+  userId: number;
   eventLog: string;
 }
 
@@ -53,15 +57,23 @@ function App() {
     localStorage.getItem("description") || ""
   );
   const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [userId, setUserId] = useState(localStorage.getItem("userId") || "");
+  const [matchUserId, setMatchUserId] = useState(
+    localStorage.getItem("matchUserId") || ""
+  );
   const [fromMatchUserId, setFromMatchUserId] = useState(
     localStorage.getItem("fromMatchUserId") || ""
   );
-  const [toUserId, setToUserId] = useState(
-    localStorage.getItem("toUserId") || ""
+  const [toMatchUserId, setToMatchUserId] = useState(
+    localStorage.getItem("toMatchUserId") || ""
   );
   const [exchangeMessage, setExchangeMessage] = useState(
     localStorage.getItem("exchangeMessage") || ""
+  );
+  const [cancelTeamId, setCancelTeamId] = useState(
+    localStorage.getItem("cancelTeamId") || ""
+  );
+  const [cancelEventType, setCancelEventType] = useState(
+    localStorage.getItem("cancelEventType") || ""
   );
   const [error, setError] = useState<string | null>(null);
   const stompClient = useRef<Client | null>(null);
@@ -72,20 +84,24 @@ function App() {
     localStorage.setItem("eventType", eventType);
     localStorage.setItem("description", description);
     localStorage.setItem("token", token);
-    localStorage.setItem("userId", userId);
+    localStorage.setItem("matchUserId", matchUserId);
     localStorage.setItem("fromMatchUserId", fromMatchUserId);
-    localStorage.setItem("toUserId", toUserId);
+    localStorage.setItem("toMatchUserId", toMatchUserId);
     localStorage.setItem("exchangeMessage", exchangeMessage);
+    localStorage.setItem("cancelTeamId", cancelTeamId);
+    localStorage.setItem("cancelEventType", cancelEventType);
   }, [
     matchId,
     teamId,
     eventType,
     description,
     token,
-    userId,
+    matchUserId,
     fromMatchUserId,
-    toUserId,
+    toMatchUserId,
     exchangeMessage,
+    cancelTeamId,
+    cancelEventType,
   ]);
 
   useEffect(() => {
@@ -129,24 +145,25 @@ function App() {
     };
   }, [matchId, teamId]);
 
+  // 경기 이벤트 유저 요청 (matchUserId 포함)
   const sendEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stompClient.current || !connected) return;
 
-    const event: MatchEventRequest = {
-      userId: userId ? Number(userId) : 0,
+    const event: MatchEventUserRequest = {
       eventType,
       description,
+      matchUserId: matchUserId ? Number(matchUserId) : 0,
     };
 
-    const message: Message<MatchEventRequest> = {
+    const payload = {
       token: token || "",
-      data: event,
+      ...event,
     };
 
     stompClient.current.publish({
       destination: `/app/match/${matchId || "default"}`,
-      body: JSON.stringify(message),
+      body: JSON.stringify(payload),
     });
   };
 
@@ -159,14 +176,35 @@ function App() {
       description: description || undefined,
     };
 
-    const message: Message<TeamEventRequest> = {
+    const payload = {
       token: token || "",
-      data: event,
+      ...event,
     };
 
     stompClient.current.publish({
       destination: `/app/match/${matchId}/teams/${teamId}`,
-      body: JSON.stringify(message),
+      body: JSON.stringify(payload),
+    });
+  };
+
+  const cancelEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stompClient.current || !connected) return;
+
+    const cancelRequest: MatchEventCancelRequest = {
+      matchUserId: matchUserId ? Number(matchUserId) : undefined,
+      teamId: cancelTeamId ? Number(cancelTeamId) : 0,
+      matchEventType: cancelEventType,
+    };
+
+    const payload = {
+      token: token || "",
+      ...cancelRequest,
+    };
+
+    stompClient.current.publish({
+      destination: `/app/match/${matchId}/cancel`,
+      body: JSON.stringify(payload),
     });
   };
 
@@ -176,18 +214,18 @@ function App() {
 
     const exchangeRequest: MatchUserExchangeRequest = {
       fromMatchUserId: fromMatchUserId ? Number(fromMatchUserId) : 0,
-      toUserId: toUserId ? Number(toUserId) : 0,
+      toMatchUserId: toMatchUserId ? Number(toMatchUserId) : 0,
       message: exchangeMessage,
     };
 
-    const message: Message<MatchUserExchangeRequest> = {
+    const payload = {
       token: token || "",
-      data: exchangeRequest,
+      ...exchangeRequest,
     };
 
     stompClient.current.publish({
       destination: `/app/match/${matchId || "default"}/exchange`,
-      body: JSON.stringify(message),
+      body: JSON.stringify(payload),
     });
   };
 
@@ -223,12 +261,12 @@ function App() {
             />
           </div>
           <div>
-            <label>User ID:</label>
+            <label>Match User ID:</label>
             <input
               type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter user ID"
+              value={matchUserId}
+              onChange={(e) => setMatchUserId(e.target.value)}
+              placeholder="Enter match user ID"
             />
           </div>
           <div>
@@ -309,6 +347,63 @@ function App() {
         </form>
       </div>
 
+      <div className="event-form">
+        <h2>Cancel Event</h2>
+        <form onSubmit={cancelEvent}>
+          <div>
+            <label>Match ID:</label>
+            <input
+              type="text"
+              value={matchId}
+              onChange={(e) => setMatchId(e.target.value)}
+              placeholder="Enter match ID"
+            />
+          </div>
+          <div>
+            <label>Token:</label>
+            <input
+              type="text"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Enter token"
+            />
+          </div>
+          <div>
+            <label>Match User ID (optional):</label>
+            <input
+              type="text"
+              value={matchUserId}
+              onChange={(e) => setMatchUserId(e.target.value)}
+              placeholder="Enter match user ID"
+            />
+          </div>
+          <div>
+            <label>Team ID:</label>
+            <input
+              type="text"
+              value={cancelTeamId}
+              onChange={(e) => setCancelTeamId(e.target.value)}
+              placeholder="Enter team ID"
+            />
+          </div>
+          <div>
+            <label>Event Type:</label>
+            <input
+              type="text"
+              value={cancelEventType}
+              onChange={(e) => setCancelEventType(e.target.value)}
+              placeholder="Enter event type to cancel"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!connected || !cancelTeamId || !cancelEventType}
+          >
+            Cancel Event
+          </button>
+        </form>
+      </div>
+
       <div className="exchange-form">
         <h2>Player Exchange</h2>
         <form onSubmit={sendExchangeRequest}>
@@ -331,12 +426,12 @@ function App() {
             />
           </div>
           <div>
-            <label>To User ID:</label>
+            <label>To Match User ID:</label>
             <input
               type="text"
-              value={toUserId}
-              onChange={(e) => setToUserId(e.target.value)}
-              placeholder="Enter to user ID"
+              value={toMatchUserId}
+              onChange={(e) => setToMatchUserId(e.target.value)}
+              placeholder="Enter to match user ID"
             />
           </div>
           <div>
