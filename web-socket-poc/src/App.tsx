@@ -408,6 +408,15 @@ function App() {
         <h2>Player Exchange</h2>
         <form onSubmit={sendExchangeRequest}>
           <div>
+            <label>Match ID:</label>
+            <input
+              type="text"
+              value={matchId}
+              onChange={(e) => setMatchId(e.target.value)}
+              placeholder="Enter match ID"
+            />
+          </div>
+          <div>
             <label>Token:</label>
             <input
               type="text"
