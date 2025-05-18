@@ -3,6 +3,14 @@ import { Client, IMessage, IFrame } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import "./App.css";
 
+// 컴포넌트 가져오기
+import PlayerEventForm from "./components/PlayerEventForm";
+import TeamEventForm from "./components/TeamEventForm";
+import CancelEventForm from "./components/CancelEventForm";
+import ExchangePlayerForm from "./components/ExchangePlayerForm";
+import EventList from "./components/EventList";
+
+// 인터페이스 정의
 interface MatchEventRequest {
   eventType: string;
   description: string;
@@ -46,6 +54,7 @@ interface ApiResponse<T> {
 }
 
 function App() {
+  // 상태 관리
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<MatchEventResponse[]>([]);
   const [matchId, setMatchId] = useState(localStorage.getItem("matchId") || "");
@@ -56,7 +65,6 @@ function App() {
   const [description, setDescription] = useState(
     localStorage.getItem("description") || ""
   );
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [matchUserId, setMatchUserId] = useState(
     localStorage.getItem("matchUserId") || ""
   );
@@ -78,12 +86,12 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const stompClient = useRef<Client | null>(null);
 
+  // 로컬 스토리지에 상태 저장
   useEffect(() => {
     localStorage.setItem("matchId", matchId);
     localStorage.setItem("teamId", teamId);
     localStorage.setItem("eventType", eventType);
     localStorage.setItem("description", description);
-    localStorage.setItem("token", token);
     localStorage.setItem("matchUserId", matchUserId);
     localStorage.setItem("fromMatchUserId", fromMatchUserId);
     localStorage.setItem("toMatchUserId", toMatchUserId);
@@ -95,7 +103,6 @@ function App() {
     teamId,
     eventType,
     description,
-    token,
     matchUserId,
     fromMatchUserId,
     toMatchUserId,
@@ -104,29 +111,31 @@ function App() {
     cancelEventType,
   ]);
 
+  // WebSocket 연결 설정
   useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws");
+    const socket = new SockJS("https://dev-api.matchday-planner.com/ws");
     const client = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
         setConnected(true);
         setError(null);
-        console.log("Connected to WebSocket");
+        console.log("WebSocket에 연결되었습니다");
 
-        // 개인 이벤트 구독
+        // 매치 이벤트 구독
         client.subscribe(`/topic/match/${matchId}`, (message: IMessage) => {
           const event = JSON.parse(message.body);
           setEvents((prev) => [event, ...prev]);
         });
 
+        // 에러 메시지 구독
         client.subscribe("/user/queue/errors", (message: IMessage) => {
           const errorResponse: ApiResponse<any> = JSON.parse(message.body);
           setError(errorResponse.message);
-          console.error("WebSocket Error:", errorResponse);
+          console.error("WebSocket 에러:", errorResponse);
         });
       },
       onStompError: (frame: IFrame) => {
-        console.error("Error connecting to WebSocket:", frame);
+        console.error("WebSocket 연결 오류:", frame);
         setConnected(false);
         setError("WebSocket 연결 오류가 발생했습니다.");
       },
@@ -143,9 +152,9 @@ function App() {
         stompClient.current.deactivate();
       }
     };
-  }, [matchId, teamId]);
+  }, [matchId]);
 
-  // 경기 이벤트 유저 요청 (matchUserId 포함)
+  // 선수 이벤트 전송
   const sendEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stompClient.current || !connected) return;
@@ -156,17 +165,13 @@ function App() {
       matchUserId: matchUserId ? Number(matchUserId) : 0,
     };
 
-    const payload = {
-      token: token || "",
-      ...event,
-    };
-
     stompClient.current.publish({
       destination: `/app/match/${matchId || "default"}`,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(event),
     });
   };
 
+  // 팀 이벤트 전송
   const sendTeamEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stompClient.current || !connected || !teamId) return;
@@ -176,17 +181,13 @@ function App() {
       description: description || undefined,
     };
 
-    const payload = {
-      token: token || "",
-      ...event,
-    };
-
     stompClient.current.publish({
       destination: `/app/match/${matchId}/teams/${teamId}`,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(event),
     });
   };
 
+  // 이벤트 취소
   const cancelEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stompClient.current || !connected) return;
@@ -197,17 +198,13 @@ function App() {
       matchEventType: cancelEventType,
     };
 
-    const payload = {
-      token: token || "",
-      ...cancelRequest,
-    };
-
     stompClient.current.publish({
       destination: `/app/match/${matchId}/cancel`,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(cancelRequest),
     });
   };
 
+  // 선수 교체
   const sendExchangeRequest = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stompClient.current || !connected) return;
@@ -218,259 +215,104 @@ function App() {
       message: exchangeMessage,
     };
 
-    const payload = {
-      token: token || "",
-      ...exchangeRequest,
-    };
-
     stompClient.current.publish({
       destination: `/app/match/${matchId || "default"}/exchange`,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(exchangeRequest),
     });
   };
 
   return (
-    <div className="app-container">
-      <h1>Match Event Recorder</h1>
+    <div
+      className="app-container"
+      style={{
+        width: "100%",
+        maxWidth: "none",
+        overflow: "hidden",
+        borderRadius: "8px",
+      }}
+    >
+      <h1>경기 이벤트 기록기</h1>
 
-      <div className="connection-status">
-        Status: {connected ? "Connected" : "Disconnected"}
+      <div
+        className={`connection-status ${
+          connected ? "connected" : "disconnected"
+        }`}
+        style={{ borderRadius: "8px" }}
+      >
+        {connected ? "WebSocket 연결됨" : "WebSocket 연결 끊김"}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message" style={{ borderRadius: "8px" }}>
+          {error}
+        </div>
+      )}
 
-      <div className="event-form">
-        <h2>Record Player Event</h2>
-        <form onSubmit={sendEvent}>
-          <div>
-            <label>Match ID:</label>
-            <input
-              type="text"
-              value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID"
+      <div
+        className="main-layout"
+        style={{ width: "100%", overflow: "hidden" }}
+      >
+        <div className="dashboard" style={{ width: "100%" }}>
+          <div className="column">
+            <PlayerEventForm
+              matchId={matchId}
+              matchUserId={matchUserId}
+              eventType={eventType}
+              description={description}
+              connected={connected}
+              onMatchIdChange={setMatchId}
+              onMatchUserIdChange={setMatchUserId}
+              onEventTypeChange={setEventType}
+              onDescriptionChange={setDescription}
+              onSubmit={sendEvent}
             />
-          </div>
-          <div>
-            <label>Token:</label>
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token"
-            />
-          </div>
-          <div>
-            <label>Match User ID:</label>
-            <input
-              type="text"
-              value={matchUserId}
-              onChange={(e) => setMatchUserId(e.target.value)}
-              placeholder="Enter match user ID"
-            />
-          </div>
-          <div>
-            <label>Event Type:</label>
-            <input
-              type="text"
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              placeholder="Enter event type"
-            />
-          </div>
-          <div>
-            <label>Description:</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter description"
-            />
-          </div>
-          <button type="submit" disabled={!connected}>
-            Send Player Event
-          </button>
-        </form>
-      </div>
 
-      <div className="event-form">
-        <h2>Record Team Event</h2>
-        <form onSubmit={sendTeamEvent}>
-          <div>
-            <label>Match ID:</label>
-            <input
-              type="text"
-              value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID"
+            <TeamEventForm
+              matchId={matchId}
+              teamId={teamId}
+              eventType={eventType}
+              description={description}
+              connected={connected}
+              onMatchIdChange={setMatchId}
+              onTeamIdChange={setTeamId}
+              onEventTypeChange={setEventType}
+              onDescriptionChange={setDescription}
+              onSubmit={sendTeamEvent}
             />
           </div>
-          <div>
-            <label>Team ID:</label>
-            <input
-              type="text"
-              value={teamId}
-              onChange={(e) => setTeamId(e.target.value)}
-              placeholder="Enter team ID"
-            />
-          </div>
-          <div>
-            <label>Token:</label>
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token"
-            />
-          </div>
-          <div>
-            <label>Event Type:</label>
-            <input
-              type="text"
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              placeholder="Enter event type"
-            />
-          </div>
-          <div>
-            <label>Description:</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter description"
-            />
-          </div>
-          <button type="submit" disabled={!connected || !teamId}>
-            Send Team Event
-          </button>
-        </form>
-      </div>
 
-      <div className="event-form">
-        <h2>Cancel Event</h2>
-        <form onSubmit={cancelEvent}>
-          <div>
-            <label>Match ID:</label>
-            <input
-              type="text"
-              value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID"
+          <div className="column">
+            <CancelEventForm
+              matchId={matchId}
+              matchUserId={matchUserId}
+              cancelTeamId={cancelTeamId}
+              cancelEventType={cancelEventType}
+              connected={connected}
+              onMatchIdChange={setMatchId}
+              onMatchUserIdChange={setMatchUserId}
+              onCancelTeamIdChange={setCancelTeamId}
+              onCancelEventTypeChange={setCancelEventType}
+              onSubmit={cancelEvent}
             />
-          </div>
-          <div>
-            <label>Token:</label>
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token"
-            />
-          </div>
-          <div>
-            <label>Match User ID (optional):</label>
-            <input
-              type="text"
-              value={matchUserId}
-              onChange={(e) => setMatchUserId(e.target.value)}
-              placeholder="Enter match user ID"
-            />
-          </div>
-          <div>
-            <label>Team ID:</label>
-            <input
-              type="text"
-              value={cancelTeamId}
-              onChange={(e) => setCancelTeamId(e.target.value)}
-              placeholder="Enter team ID"
-            />
-          </div>
-          <div>
-            <label>Event Type:</label>
-            <input
-              type="text"
-              value={cancelEventType}
-              onChange={(e) => setCancelEventType(e.target.value)}
-              placeholder="Enter event type to cancel"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!connected || !cancelTeamId || !cancelEventType}
-          >
-            Cancel Event
-          </button>
-        </form>
-      </div>
 
-      <div className="exchange-form">
-        <h2>Player Exchange</h2>
-        <form onSubmit={sendExchangeRequest}>
-          <div>
-            <label>Match ID:</label>
-            <input
-              type="text"
-              value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-              placeholder="Enter match ID"
+            <ExchangePlayerForm
+              matchId={matchId}
+              fromMatchUserId={fromMatchUserId}
+              toMatchUserId={toMatchUserId}
+              exchangeMessage={exchangeMessage}
+              connected={connected}
+              onMatchIdChange={setMatchId}
+              onFromMatchUserIdChange={setFromMatchUserId}
+              onToMatchUserIdChange={setToMatchUserId}
+              onExchangeMessageChange={setExchangeMessage}
+              onSubmit={sendExchangeRequest}
             />
           </div>
-          <div>
-            <label>Token:</label>
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter token"
-            />
-          </div>
-          <div>
-            <label>From Match User ID:</label>
-            <input
-              type="text"
-              value={fromMatchUserId}
-              onChange={(e) => setFromMatchUserId(e.target.value)}
-              placeholder="Enter from match user ID"
-            />
-          </div>
-          <div>
-            <label>To Match User ID:</label>
-            <input
-              type="text"
-              value={toMatchUserId}
-              onChange={(e) => setToMatchUserId(e.target.value)}
-              placeholder="Enter to match user ID"
-            />
-          </div>
-          <div>
-            <label>Exchange Message:</label>
-            <input
-              type="text"
-              value={exchangeMessage}
-              onChange={(e) => setExchangeMessage(e.target.value)}
-              placeholder="Enter exchange message"
-            />
-          </div>
-          <button type="submit" disabled={!connected}>
-            Exchange Player
-          </button>
-        </form>
-      </div>
+        </div>
 
-      <div className="events-list">
-        <h2>Recent Events</h2>
-        <ul>
-          {events.map((event, index) => (
-            <li key={index}>
-              <strong>{event.userName}</strong> - {event.eventLog}
-              <br />
-              <small>
-                Team: {event.teamName} | Time: {event.elapsedMinutes}'
-              </small>
-            </li>
-          ))}
-        </ul>
+        <div className="events-container">
+          <EventList events={events} />
+        </div>
       </div>
     </div>
   );
