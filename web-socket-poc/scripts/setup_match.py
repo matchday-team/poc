@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 import requests
@@ -59,16 +60,24 @@ def join_team(user_id, team_id, number, position):
 
 def create_match(title, home_team_id, away_team_id):
     url = f"{BASE_URL}/matches"
+    match_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    # hh:mm:ss 형식
+    planed_start_time = datetime.datetime.now().strftime("%H:%M:%S")
+    planed_end_time = (datetime.datetime.now() + datetime.timedelta(hours=1)).strftime(
+        "%H:%M:%S"
+    )
+
     payload = {
         "title": title,
         "homeTeamId": home_team_id,
         "awayTeamId": away_team_id,
         "matchType": "리그",
         "stadium": "홈구장",
-        "matchDate": "2999-04-22",
-        "plannedStartTime": "14:30:00",
-        "plannedEndTime": "14:30:00",
-        "matchState": "SCHEDULED",
+        "matchDate": match_date,
+        "plannedStartTime": planed_start_time,
+        "plannedEndTime": planed_end_time,
+        "firstHalfPeriod": 45,
+        "secondHalfPeriod": 45,
     }
     response = requests.post(url, json=payload)
     response_json = response.json()
@@ -93,6 +102,14 @@ def register_match_user(match_id, user_id, team_id, role):
     print(
         f"[경기 참여] 매치ID: {match_id} | 유저ID: {user_id} | {team_info} | 역할: {role} | {format_response(response_json)}"
     )
+
+
+def start_match(match_id: int) -> None:
+    url = f"{BASE_URL}/matches/{match_id}/time"
+    payload = {"halfType": "FIRST_HALF", "timeType": "START_TIME", "time": "14:30:00"}
+    response = requests.patch(url, json=payload)
+    response_json = response.json()
+    print(f"[경기 시작] 매치ID: {match_id} | {format_response(response_json)}")
 
 
 def main():
@@ -128,6 +145,10 @@ def main():
     register_match_user(match_id, lee_id, team1_id, "SUB_PLAYER")
     register_match_user(match_id, jang_id, team2_id, "START_PLAYER")
     register_match_user(match_id, kang_id, None, "ARCHIVES")
+
+    # 경기 시작
+    print("\n----- 경기 시작 -----")
+    start_match(match_id)
 
     print("\n========== 테스트 설정 완료 ==========\n")
     print(f"생성된 매치 ID: {match_id}")
