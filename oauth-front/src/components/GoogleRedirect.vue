@@ -7,17 +7,24 @@
 <script>
 import axios from 'axios';
 
-export default{
-    created(){
+export default {
+    created() {
         const code = new URL(window.location.href).searchParams.get("code");
         this.sendCodeToServer(code);
     },
-    methods:{
-        async sendCodeToServer(code){
-            const response = await axios.post("http://localhost:8080/api/v1/auth/oauth/google", {code});//body 담아 json 형식으로 넘겨주기
-            const token = response.data.data.token;
-            localStorage.setItem("token", token);
-            window.location.href = "/";// console.log 볼꺼면 주석처리하세용
+    methods: {
+        async sendCodeToServer(code) {
+            try {
+                const response = await axios.post("http://localhost:8080/open-api/v1/users/google", { code }, {
+                    withCredentials: true // HttpOnly 쿠키 받기 위해 필수
+                });
+
+                const token = response.data.data.accessToken;
+                localStorage.setItem("accessToken", token);
+                window.location.href = "/";
+            } catch (error) {
+                console.error("구글 로그인 실패", error);
+            }
         }
     }
 }
