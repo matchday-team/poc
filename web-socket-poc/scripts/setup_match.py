@@ -1,9 +1,23 @@
 import datetime
+import os
 import uuid
 
 import requests
 
 BASE_URL = "http://localhost:8080/api/v1"
+
+# Authorization 토큰 설정 (환경변수에서 가져오거나 직접 설정)
+# 환경변수: export AUTH_TOKEN="your_actual_token_here"
+# 또는 아래 AUTH_TOKEN 변수에 직접 토큰 값을 입력하세요
+AUTH_TOKEN = os.getenv(
+    "AUTH_TOKEN",
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyb29rZWRzeXNjMzZAZ21haWwuY29tIiwiaWF0IjoxNzQ5ODM1OTIwLCJleHAiOjE3NDk4MzY1MjAsInJvbGUiOiJBRE1JTiIsInVzZXJJZCI6MTI2MiwidG9rZW5UeXBlIjoiQUNDRVNTIn0.fQ1ngTbyzwPdOpZiyLqY2xSo2B9Pqr-gMapSG9_wkbU",
+)
+
+
+def get_headers():
+    """API 요청에 사용할 공통 헤더 반환"""
+    return {"Authorization": f"Bearer {AUTH_TOKEN}", "Content-Type": "application/json"}
 
 
 def format_response(response_json):
@@ -15,7 +29,7 @@ def format_response(response_json):
 def create_user(name):
     url = f"{BASE_URL}/users"
     payload = {"name": name}
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=get_headers())
     response_json = response.json()
     print(f"[유저 생성] 이름: {name} | {format_response(response_json)}")
     return response_json["data"]
@@ -39,7 +53,7 @@ def create_team(name, team_color):
         "bottomColor": team_color,
         "stockingColor": team_color,
     }
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=get_headers())
     response_json = response.json()
     print(
         f"[팀 생성] 이름: {name} | 색상: {team_color} | {format_response(response_json)}"
@@ -50,7 +64,7 @@ def create_team(name, team_color):
 def join_team(user_id, team_id, number, position):
     url = f"{BASE_URL}/users/{user_id}/teams"
     payload = {"teamId": team_id, "number": number, "defaultPosition": position}
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=get_headers())
     response_json = response.json()
     print(
         f"[팀 가입] 유저ID: {user_id} | 팀ID: {team_id} | 번호: {number} | 포지션: {position} | {format_response(response_json)}"
@@ -79,7 +93,7 @@ def create_match(title, home_team_id, away_team_id):
         "firstHalfPeriod": 45,
         "secondHalfPeriod": 45,
     }
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=get_headers())
     response_json = response.json()
     print(
         f"[경기 생성] 제목: {title} | 홈팀: {home_team_id} | 원정팀: {away_team_id} | {format_response(response_json)}"
@@ -96,7 +110,7 @@ def register_match_user(match_id, user_id, team_id, role):
         "matchPosition": "FW",
         "matchGrid": "1",
     }
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, headers=get_headers())
     response_json = response.json()
     team_info = f"팀ID: {team_id}" if team_id else "팀ID: 없음"
     print(
@@ -107,7 +121,7 @@ def register_match_user(match_id, user_id, team_id, role):
 def start_match(match_id: int) -> None:
     url = f"{BASE_URL}/matches/{match_id}/time"
     payload = {"halfType": "FIRST_HALF", "timeType": "START_TIME", "time": "14:30:00"}
-    response = requests.patch(url, json=payload)
+    response = requests.patch(url, json=payload, headers=get_headers())
     response_json = response.json()
     print(f"[경기 시작] 매치ID: {match_id} | {format_response(response_json)}")
 
