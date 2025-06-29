@@ -10,18 +10,16 @@ import axios from 'axios';
 export default {
   created() {
     const code = new URL(window.location.href).searchParams.get("code");
-    const redirectUri = window.location.origin + window.location.pathname;
     console.log("✅ 인가 코드:", code);
-    console.log("✅ Redirect URI:", redirectUri);
-    this.sendCodeToServer(code, redirectUri);
+    this.sendCodeToServer(code);
   },
   methods: {
-    async sendCodeToServer(code, redirectUri) {
+    async sendCodeToServer(code) {
       const requestBody = {
-        code,
-        redirectUri
+        code
+        // ✅ redirectUri 제거됨
       };
-      console.log("📦 서버로 전송할 요청 JSON:", JSON.stringify(requestBody, null, 2)); // 보기 좋게 출력
+      console.log("📦 서버로 전송할 요청 JSON:", JSON.stringify(requestBody, null, 2));
 
       try {
         const response = await axios.post(

@@ -23,7 +23,7 @@ const routes = [
     component: GoogleRedirect
   },
   {
-    path: "/oauth/kakao/redirect",
+    path: "/login/kakao-redirect",
     component: KakaoRedirect
   }
 ];

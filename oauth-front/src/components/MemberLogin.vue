@@ -59,8 +59,8 @@ export default{
             // openid는 요청하지 않아도 기본적으로 제공. email과 profile은 요청시 제공.
             googleScope: "openid email profile",
             kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
-            kakaoClientId: "cd32638fec60f148198071294e72caa3",
-            kakaoRedirectUrl: "http://localhost:3000/oauth/kakao/redirect",
+            kakaoClientId: "874bba3fe98abf68721c8057ab1421a6",
+            kakaoRedirectUrl: "http://localhost:3000/login/kakao-redirect",
         }
     },
     methods:{
