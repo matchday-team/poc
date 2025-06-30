@@ -48,47 +48,50 @@
 <script>
 import axios from 'axios';
 
-export default{
-    data(){
-        return{
-            email : "",
-            password: "",
-            googleUrl: "https://accounts.google.com/o/oauth2/auth",
-            googleClientId: "1077528609885-o6liu8qvasp2fj4ojj2ufmgnc5bi42pj.apps.googleusercontent.com",
-            googleRedirectUrl: "http://localhost:3000/oauth/google/redirect",
-            // openid는 요청하지 않아도 기본적으로 제공. email과 profile은 요청시 제공.
-            googleScope: "openid email profile",
-            kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
-            kakaoClientId: "874bba3fe98abf68721c8057ab1421a6",
-            kakaoRedirectUrl: "http://localhost:3000/login/kakao-redirect",
-        }
-    },
-    methods:{
-        async memberLogin(){
-            const loginData = {
-                email: this.email,
-                password: this.password
-            }
-            const response = await axios.post("http://localhost:8080/member/doLogin", loginData);
-            const token = response.data.token;
-            localStorage.setItem("token", token);
-            window.location.href = "/";
-        },
-        googleLogin(){
-            //로그인 요청 나가는 최종 url
-            const auth_uri = `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
-            window.location.href = auth_uri;
-            console.log(auth_uri)
-        },
-        kakaoLogin(){
-            
-            const auth_uri = `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
-            window.location.href = auth_uri;
-        },
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-        googleServerLogin(){
-            window.location.href = "http://localhost:8080/oauth2/authorization/google";
-        }
+export default {
+  data() {
+    return {
+      email: "",
+      password: "",
+      googleUrl: "https://accounts.google.com/o/oauth2/auth",
+      googleClientId: "1077528609885-o6liu8qvasp2fj4ojj2ufmgnc5bi42pj.apps.googleusercontent.com",
+      googleRedirectUrl: "http://localhost:3000/oauth/google/redirect",
+      googleScope: "openid email profile",
+      kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
+      kakaoClientId: "874bba3fe98abf68721c8057ab1421a6",
+      kakaoRedirectUrl: "http://localhost:3000/login/kakao-redirect",
+    };
+  },
+  methods: {
+    async memberLogin() {
+      const loginData = {
+        email: this.email,
+        password: this.password
+      };
+      try {
+        const response = await axios.post(`${API_BASE_URL}/member/doLogin`, loginData);
+        const token = response.data.token;
+        localStorage.setItem("token", token);
+        window.location.href = "/";
+      } catch (err) {
+        console.error("로그인 실패:", err.response?.data || err.message);
+        alert("로그인 실패");
+      }
+    },
+    googleLogin() {
+      const auth_uri = `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
+      console.log(auth_uri);
+      window.location.href = auth_uri;
+    },
+    kakaoLogin() {
+      const auth_uri = `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
+      window.location.href = auth_uri;
+    },
+    googleServerLogin() {
+      window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
     }
-}
+  }
+};
 </script>

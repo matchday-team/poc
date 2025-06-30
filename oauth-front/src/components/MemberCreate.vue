@@ -31,22 +31,30 @@
 <script>
 import axios from 'axios';
 
-export default{
-    data(){
-        return{
-            email : "",
-            password: ""
-        }
-    },
-    methods:{
-        async memberCreate(){
-            const registerData = {
-                email: this.email,
-                password: this.password
-            }
-            await axios.post("http://localhost:8080/member/create", registerData);
-            window.location.href = "/";
-        }
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+export default {
+  data() {
+    return {
+      email: "",
+      password: ""
+    };
+  },
+  methods: {
+    async memberCreate() {
+      const registerData = {
+        email: this.email,
+        password: this.password
+      };
+
+      try {
+        await axios.post(`${API_BASE_URL}/member/create`, registerData);
+        window.location.href = "/";
+      } catch (error) {
+        console.error("회원가입 실패:", error.response?.data || error.message);
+        alert("회원가입 중 오류가 발생했습니다.");
+      }
     }
+  }
 }
 </script>

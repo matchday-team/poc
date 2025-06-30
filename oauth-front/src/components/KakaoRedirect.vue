@@ -7,6 +7,8 @@
 <script>
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   created() {
     const code = new URL(window.location.href).searchParams.get("code");
@@ -17,13 +19,13 @@ export default {
     async sendCodeToServer(code) {
       const requestBody = {
         code
-        // ✅ redirectUri 제거됨
+        // redirectUri 필요시 여기에 추가
       };
       console.log("📦 서버로 전송할 요청 JSON:", JSON.stringify(requestBody, null, 2));
 
       try {
         const response = await axios.post(
-          "http://localhost:8080/open-api/v1/users/kakao",
+          `${API_BASE_URL}/open-api/v1/users/kakao`,
           requestBody,
           {
             withCredentials: true

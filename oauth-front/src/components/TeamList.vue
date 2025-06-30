@@ -36,6 +36,8 @@
 import axios from 'axios';
 import { ref } from 'vue';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   name: 'TeamList',
   setup() {
@@ -56,7 +58,7 @@ export default {
           throw new Error(msg);
         }
 
-        const response = await axios.get('http://localhost:8080/api/v1/teams', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/teams`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

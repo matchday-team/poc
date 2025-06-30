@@ -21,6 +21,8 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 function parseJwt(token) {
   try {
     const base64Url = token.split('.')[1];
@@ -79,8 +81,8 @@ export default {
 
     async renewToken() {
       try {
-        const response = await axios.post("http://localhost:8080/open-api/v1/users/renew", null, {
-          withCredentials: true // refreshToken 쿠키 전송
+        const response = await axios.post(`${API_BASE_URL}/open-api/v1/users/renew`, null, {
+          withCredentials: true
         });
         const newAccessToken = response.data.data.accessToken;
         localStorage.setItem("accessToken", newAccessToken);
@@ -96,7 +98,7 @@ export default {
 
     async doLogout() {
       try {
-        await axios.post("http://localhost:8080/api/v1/users/logout", {}, {
+        await axios.post(`${API_BASE_URL}/api/v1/users/logout`, {}, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`
           }
@@ -115,3 +117,5 @@ export default {
   }
 }
 </script>
+
+
